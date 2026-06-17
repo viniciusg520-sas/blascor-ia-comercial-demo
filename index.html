@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blascor IA Comercial 2.0</title>
+  <link rel="stylesheet" href="style.css?v=2.0.0">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Versão 2.0</p>
+      <h1>Blascor IA Comercial</h1>
+      <p class="subtitle">Discadora assistida, histórico comercial, retornos e produtividade por vendedor.</p>
+    </div>
+    <div class="header-actions">
+      <label>
+        Vendedor ativo
+        <select id="activeSeller"></select>
+      </label>
+      <button class="button secondary" id="exportCsvBtn" type="button">Exportar CSV</button>
+      <button class="button secondary" id="exportExcelBtn" type="button">Exportar Excel</button>
+      <label class="button secondary file-button" for="csvInput">Importar lote</label>
+      <input id="csvInput" type="file" accept=".csv,text/csv">
+      <button class="button danger" id="clearBaseBtn" type="button">Limpar base</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <nav class="tabs" aria-label="Navegação principal">
+      <button class="tab-button active" data-tab="operation" type="button">Operação</button>
+      <button class="tab-button" data-tab="next" type="button">Próximo Lead</button>
+      <button class="tab-button" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab-button" data-tab="sellers" type="button">Vendedores</button>
+      <button class="tab-button" data-tab="reports" type="button">Relatórios</button>
+      <button class="tab-button" data-tab="integrations" type="button">Integrações</button>
+    </nav>
+
+    <section class="summary-grid" aria-label="Resumo dos leads">
+      <article class="summary-card"><span>Total de leads</span><strong id="totalCount">0</strong></article>
+      <article class="summary-card calls"><span>Total de ligações</span><strong id="callsCount">0</strong></article>
+      <article class="summary-card conversions"><span>Conversões</span><strong id="conversionCount">0</strong></article>
+      <article class="summary-card hot"><span>Leads quentes</span><strong id="hotCount">0</strong></article>
+      <article class="summary-card overdue"><span>Retornos vencidos</span><strong id="overdueCount">0</strong></article>
+      <article class="summary-card return"><span>Retornos pendentes</span><strong id="returnCount">0</strong></article>
+    </section>
+
+    <section class="tab-panel active" id="operationPanel">
+      <section class="workspace-grid">
+        <aside class="panel lead-form-panel">
+          <div class="panel-heading">
+            <h2 id="formTitle">Novo lead</h2>
+            <button class="button ghost hidden" id="cancelEditBtn" type="button">Cancelar edição</button>
+          </div>
+
+          <form id="leadForm" autocomplete="off">
+            <input type="hidden" id="leadId">
+            <label>Empresa <input id="company" type="text" required maxlength="120" placeholder="Loja Central de Tintas"></label>
+            <div class="form-row">
+              <label>Cidade <input id="city" type="text" required maxlength="80" placeholder="São Paulo"></label>
+              <label>Estado <input id="state" type="text" required maxlength="2" placeholder="SP"></label>
+            </div>
+            <div class="form-row">
+              <label>Telefone <input id="phone" type="tel" required maxlength="30" placeholder="(11) 3333-4444"></label>
+              <label>WhatsApp <input id="whatsapp" type="tel" maxlength="30" placeholder="(11) 99999-0000"></label>
+            </div>
+            <label>Comprador/responsável <input id="buyer" type="text" maxlength="100" placeholder="Mariana Souza"></label>
+            <div class="form-row">
+              <label>Representante responsável <select id="seller"></select></label>
+              <label>Prioridade
+                <select id="priority">
+                  <option value="Alta">Alta</option>
+                  <option value="Média">Média</option>
+                  <option value="Baixa">Baixa</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-row">
+              <label>Última compra <input id="lastPurchaseDate" type="date"></label>
+              <label>Valor da última compra <input id="lastPurchaseValue" type="number" min="0" step="0.01" placeholder="0,00"></label>
+            </div>
+            <div class="form-row">
+              <label>Status
+                <select id="status">
+                  <option value="Pendente">Pendente</option>
+                  <option value="Quente">Quente</option>
+                  <option value="Morno">Morno</option>
+                  <option value="Frio">Frio</option>
+                  <option value="Retornar">Retornar</option>
+                  <option value="Convertido">Convertido</option>
+                </select>
+              </label>
+              <label>Retorno agendado <input id="returnAt" type="datetime-local"></label>
+            </div>
+            <label>Observações <textarea id="notes" rows="3" maxlength="1000"></textarea></label>
+            <label>Observações internas <textarea id="internalNotes" rows="3" maxlength="1200"></textarea></label>
+            <button class="button primary full" type="submit">Salvar lead</button>
+          </form>
+        </aside>
+
+        <section class="content-area">
+          <section class="script-panel">
+            <div class="panel-heading compact">
+              <h2>Roteiro comercial</h2>
+              <button class="icon-button" id="copyScriptBtn" type="button">Copiar</button>
+            </div>
+            <p id="salesScript">Bom dia, tudo bem? Aqui é da Blascor Tintas. Eu gostaria de falar com o responsável pelas compras de tintas da loja. A Blascor trabalha com soluções em tintas e gostaríamos de apresentar uma oportunidade comercial para lojas de tintas e materiais de construção da região. Hoje vocês já trabalham com quais marcas de tinta? Existe abertura para conhecer um novo fornecedor? Posso encaminhar nosso catálogo e condições comerciais pelo WhatsApp?</p>
+          </section>
+
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <label class="search-field">Busca <input id="searchInput" type="search" placeholder="Empresa, cidade, telefone ou representante"></label>
+              <label>Status
+                <select id="statusFilter">
+                  <option value="Todos">Todos</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Quente">Quente</option>
+                  <option value="Morno">Morno</option>
+                  <option value="Frio">Frio</option>
+                  <option value="Retornar">Retornar</option>
+                  <option value="Convertido">Convertido</option>
+                  <option value="Vencidos">Retornos vencidos</option>
+                </select>
+              </label>
+              <label>Prioridade
+                <select id="priorityFilter">
+                  <option value="Todas">Todas</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Média">Média</option>
+                  <option value="Baixa">Baixa</option>
+                </select>
+              </label>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Empresa</th>
+                    <th>Cidade/UF</th>
+                    <th>Telefone</th>
+                    <th>Representante</th>
+                    <th>Prioridade</th>
+                    <th>Status</th>
+                    <th>Retorno</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="leadsTableBody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="emptyState">Nenhum lead encontrado.</div>
+            </div>
+          </section>
+        </section>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="nextPanel">
+      <section class="next-layout">
+        <article class="panel next-card">
+          <p class="eyebrow">Fila inteligente</p>
+          <h2 id="nextLeadName">Nenhum lead disponível</h2>
+          <div class="next-meta" id="nextLeadMeta"></div>
+          <p id="nextLeadNotes" class="muted-text"></p>
+          <div class="next-actions">
+            <button class="button primary" id="callNextBtn" type="button">Ligar próximo</button>
+            <button class="button secondary" id="skipNextBtn" type="button">Pular</button>
+            <button class="button secondary" id="summaryNextBtn" type="button">Registrar resumo</button>
+            <button class="button ghost" id="editNextBtn" type="button">Editar</button>
+          </div>
+        </article>
+        <article class="panel queue-panel">
+          <h2>Próximos da fila</h2>
+          <div id="nextQueueList" class="queue-list"></div>
+        </article>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="dashboardPanel">
+      <section class="dashboard-grid">
+        <article class="panel chart-panel">
+          <h2>Funil comercial</h2>
+          <canvas id="statusChart" width="520" height="260"></canvas>
+        </article>
+        <article class="panel chart-panel">
+          <h2>Ligações e conversões</h2>
+          <canvas id="callsChart" width="520" height="260"></canvas>
+        </article>
+        <article class="panel chart-panel wide">
+          <h2>Retornos por prioridade</h2>
+          <canvas id="returnsChart" width="900" height="260"></canvas>
+        </article>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="sellersPanel">
+      <section class="workspace-grid sellers-grid">
+        <aside class="panel">
+          <h2>Novo vendedor</h2>
+          <form id="sellerForm">
+            <input type="hidden" id="sellerId">
+            <label>Nome <input id="sellerName" type="text" maxlength="100" required></label>
+            <label>E-mail/ramal <input id="sellerContact" type="text" maxlength="120"></label>
+            <button class="button primary full" type="submit">Salvar vendedor</button>
+          </form>
+        </aside>
+        <section class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Vendedor</th><th>Contato</th><th>Leads</th><th>Ligações</th><th>Conversões</th><th>Ações</th></tr></thead>
+              <tbody id="sellersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="reportsPanel">
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <h2>Produtividade por vendedor</h2>
+          <button class="button secondary" id="refreshReportsBtn" type="button">Atualizar relatório</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Vendedor</th><th>Leads</th><th>Ligações</th><th>Conversões</th><th>Retornos pendentes</th><th>Retornos vencidos</th><th>Taxa de conversão</th></tr></thead>
+            <tbody id="productivityTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="integrationsPanel">
+      <section class="panel integration-panel">
+        <h2>Preparação para Protheus e Electron</h2>
+        <p>Esta versão mantém adaptadores isolados no JavaScript para futura troca do armazenamento local por API, banco local, Electron ou integração com Protheus.</p>
+        <div class="integration-grid">
+          <div><strong>Protheus</strong><span>Funções de mapeamento e payload comercial disponíveis em `window.BlascorApp.adapters.protheus`.</span></div>
+          <div><strong>Electron</strong><span>Camada de storage e discagem concentrada em serviços para migrar de `localStorage` e `tel:` para IPC/Node.</span></div>
+          <div><strong>MicroSIP</strong><span>Função preparada para comando local: `"C:\Program Files\MicroSIP\microsip.exe" NUMERO`.</span></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="summaryDialog">
+    <form method="dialog" class="dialog-card" id="summaryForm">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Contato comercial</p>
+          <h2 id="summaryLeadName">Lead</h2>
+        </div>
+        <button class="icon-button" value="cancel" type="submit">Fechar</button>
+      </div>
+      <input type="hidden" id="summaryLeadId">
+      <div class="form-row">
+        <label>Tipo
+          <select id="contactType">
+            <option value="Ligação">Ligação</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="E-mail">E-mail</option>
+            <option value="Visita">Visita</option>
+          </select>
+        </label>
+        <label>Resultado
+          <select id="contactResult">
+            <option value="Resumo">Resumo</option>
+            <option value="Conversão">Conversão</option>
+            <option value="Sem resposta">Sem resposta</option>
+            <option value="Retornar">Retornar</option>
+          </select>
+        </label>
+      </div>
+      <label>Resumo do contato <textarea id="callSummary" rows="6" maxlength="1600"></textarea></label>
+      <div class="form-row">
+        <label>Agendar retorno <input id="summaryReturnAt" type="datetime-local"></label>
+        <label>Vendedor <select id="summarySeller"></select></label>
+      </div>
+      <p class="classification-hint" id="classificationHint">A classificação será atualizada automaticamente ao salvar.</p>
+      <div class="history-box">
+        <h3>Histórico do lead</h3>
+        <div id="contactHistoryList"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="button secondary" value="cancel" type="submit">Cancelar</button>
+        <button class="button primary" id="saveSummaryBtn" value="default" type="button">Salvar contato</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog-card import-dialog">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Importação em lote</p>
+          <h2>Validação do arquivo</h2>
+        </div>
+        <button class="icon-button" value="cancel" type="submit">Fechar</button>
+      </div>
+      <div id="importSummary" class="import-summary"></div>
+      <div class="table-wrap import-preview-wrap">
+        <table>
+          <thead><tr><th>Linha</th><th>Empresa</th><th>Telefone</th><th>Status</th><th>Validação</th></tr></thead>
+          <tbody id="importPreviewBody"></tbody>
+        </table>
+      </div>
+      <div class="dialog-actions">
+        <button class="button secondary" value="cancel" type="submit">Cancelar</button>
+        <button class="button primary" id="confirmImportBtn" type="button">Importar válidos</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=2.0.0"></script>
+</body>
+</html>

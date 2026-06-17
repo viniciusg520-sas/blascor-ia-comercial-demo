@@ -1,0 +1,9 @@
+# Sistema local sem backend.
+# Mantemos apenas arquivos-fonte do projeto.
+
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+dist/
+build/
